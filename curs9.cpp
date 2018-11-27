@@ -45,6 +45,25 @@ void mergesort(int* a, int i, int j)
 	}
 }
 
+void mergesort_parallel(int* a, int i, int j)
+{
+	int mid;
+#pragma omp parallel shared(mid) num_threads(2)
+	if (i < j)
+	{
+#pragma omp sections
+		{
+			mid = (i + j) / 2;
+#pragma omp section
+			mergesort(a, i, mid);        //left recursion
+#pragma omp section
+			mergesort(a, mid + 1, j);
+		} //right recursion
+			#pragma omp barrier
+			merge(a, i, mid, mid + 1, j);    //merging of two sorted sub-arrays
+	}
+}
+
 void swap(int* a, int* b) {
 	int temp = *a;
 	*a = *b;
@@ -91,7 +110,7 @@ void printVector(int* v, int N) {
 
 
 void main() {
-	const long N = 2 * 1e3;
+	const long N = 1 * 1e5;
 	int valori[N];
 
 	// generare de vector initial
@@ -110,7 +129,7 @@ void main() {
 	printVector(valori, 100);
 
 	// test sortare cu succes
-	int sum = 0;
+	long sum = 0;
 	for (int i = 1; i < N; i++) {
 		sum += (valori[i] - valori[i - 1]);
 	}
@@ -123,6 +142,27 @@ void main() {
 	tStart = omp_get_wtime();
 
 	mergesort(valori, 0, N - 1);
+
+	tFinal = omp_get_wtime();
+
+	cout << "Durata: " << tFinal - tStart << " s" << endl;
+
+	printVector(valori, 100);
+
+	// test sortare cu succes
+	sum = 0;
+	for (int i = 1; i < N; i++) {
+		sum += (valori[i] - valori[i - 1]);
+	}
+
+	cout << "Suma diferente: " << sum << endl;
+
+	// testare merge sort paralel
+	for (int i = 0; i < N; i++) valori[i] = N - i;
+
+	tStart = omp_get_wtime();
+
+	mergesort_parallel(valori, 0, N - 1);
 
 	tFinal = omp_get_wtime();
 
